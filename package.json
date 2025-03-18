@@ -2,9 +2,10 @@
   "name": "plannify",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon src/app.js",
+    "start:prod": "node src/app.js"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +15,9 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.12.1",
+    "mongoose": "^8.12.1"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.9"
   }
 }
