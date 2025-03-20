@@ -105,16 +105,16 @@ A RESTful API built with Express.js and MongoDB for managing todos with secure u
 plainfy/
 ├── src/
 │   ├── controllers/       # Business logic
-│   │   ├── auth_controller.js
-│   │   └── todo_controller.js
+│   │   ├── authController.js
+│   │   └── todoController.js
 │   ├── middleware/        # Auth middleware
 │   │   └── auth.js
 │   ├── models/            # MongoDB schemas
 │   │   ├── user.js
 │   │   └── todo.js
 │   ├── routes/            # API endpoints
-│   │   ├── auth_routes.js
-│   │   └── todo_routes.js
+│   │   ├── authRoutes.js
+│   │   └── todoRoutes.js
 │   └── app.js             # Server configuration
 ├── .env                   # Environment variables
 └── package.json           # Dependency management

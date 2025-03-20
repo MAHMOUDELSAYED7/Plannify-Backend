@@ -2,13 +2,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
-const authRoutes = require('./routes/auth_routes');
-const todoRoutes = require('./routes/todo_routes');
+const authRoutes = require('./routes/authRoutes');
+const todoRoutes = require('./routes/todoRoutes');
 
 const app = express();
 const port = process.env.PORT;
 
-app.use(cors());
+app.use(cors({
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Authorization', 'Content-Type']
+}));
+
 app.use(express.json());
 
 const mongoUri = process.env.MONGO_URI;
