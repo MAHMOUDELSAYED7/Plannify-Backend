@@ -37,35 +37,6 @@ const sendOtpEmail = async (email, otp) => {
   }
 };
 
-exports.register = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'Username, email, and password are required' });
-    }
-
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username or email already exists' });
-    }
-
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const user = new User({
-      username,
-      email,
-      password,
-      otp,
-      otpExpires: Date.now() + 300000, // 5 minutes
-    });
-    await user.save();
-
-    await sendOtpEmail(email, otp);
-    res.status(201).json({ message: 'User registered. Please verify your email with the OTP sent.' });
-  } catch (err) {
-    res.status(500).json({ message: 'Internal Server Error', error: err.message });
-  }
-};
 
 exports.verifyOtp = async (req, res) => {
   try {
@@ -91,6 +62,49 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+exports.register = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Username, email, and password are required' });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      if (!existingUser.verified) {
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        existingUser.otp = otp;
+        existingUser.otpExpires = Date.now() + 300000; // 5 minutes
+        await existingUser.save();
+
+        await sendOtpEmail(email, otp);
+        return res.status(403).json({ message: 'Email already registered but not verified. OTP has been resent.' });
+      }
+
+      if (existingUser.username !== username || !(await existingUser.comparePassword(password))) {
+        return res.status(400).json({ message: 'Invalid username or password for the registered email' });
+      }
+
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const user = new User({
+      username,
+      email,
+      password,
+      otp,
+      otpExpires: Date.now() + 300000, // 5 minutes
+    });
+    await user.save();
+
+    await sendOtpEmail(email, otp);
+    res.status(201).json({ message: 'User registered. Please verify your email with the OTP sent.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+  }
+};
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -101,17 +115,23 @@ exports.login = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     if (!user.verified) {
-      return res.status(403).json({ message: 'Please verify your email before logging in' });
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      user.otp = otp;
+      user.otpExpires = Date.now() + 300000; // 5 minutes
+      await user.save();
+
+      await sendOtpEmail(email, otp);
+      return res.status(403).json({ message: 'Email not verified. OTP has been sent for verification.' });
     }
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
     res.status(200).json({ token });
